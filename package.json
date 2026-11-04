@@ -1,7 +1,7 @@
 {
-  "name": "mudeskeitenably-site",
-  "type": "module",
+  "name": "mudesk-keitenably",
+  "private": true,
   "dependencies": {
-    "firebase-admin": "^12.1.0"
+    "@netlify/blobs": "latest"
   }
 }
