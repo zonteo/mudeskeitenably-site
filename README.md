@@ -15,3 +15,4 @@ Contenu du dossier :
    Puis redéployer (Deploys > Trigger deploy).
 3. Ouvrir le site à son adresse https://xxxx.netlify.app, se connecter en admin,
    puis ☰ Modifier le site > Test de connexion : Netlify doit afficher ✅.
+.
