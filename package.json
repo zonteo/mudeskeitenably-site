@@ -1,7 +1,9 @@
 {
-  "name": "mudesk-keitenably",
+  "name": "mudesk-site",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
   "dependencies": {
-    "@netlify/blobs": "latest"
+    "@netlify/blobs": "^8.1.0"
   }
 }
