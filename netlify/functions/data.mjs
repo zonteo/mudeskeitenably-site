@@ -28,6 +28,33 @@ async function auth(cfg, pw) {
   return safeEq(pw || "", env) ? 1 : 0;
 }
 
+
+// Statistiques publiques : visiteurs en ligne, membres connectés, total des visites
+async function hit(b) {
+  const vid = String(b.vid || "");
+  if (!/^[\w-]{8,64}$/.test(vid)) return J({ error: "identifiant invalide" }, 400);
+  const sts = getStore({ name: "mudesk-stats", consistency: "strong" });
+  const bk = Math.floor(Date.now() / 3e5); // tranches de 5 minutes
+  await sts.set(`p/${bk}/${vid}`, "1");
+  if (b.mem) await sts.set(`m/${bk}/${vid}`, "1");
+  let c = await sts.get("visits", { type: "json" }).catch(() => null);
+  let visits = (c && +c.n) || 0;
+  if (b.visit) { visits += 1; await sts.setJSON("visits", { n: visits }); }
+  const ids = async (pre) => {
+    const r = await sts.list({ prefix: pre }).catch(() => ({ blobs: [] }));
+    return r.blobs.map((x) => x.key.split("/")[2]);
+  };
+  const on = new Set([...(await ids(`p/${bk}/`)), ...(await ids(`p/${bk - 1}/`))]).size;
+  const mem = new Set([...(await ids(`m/${bk}/`)), ...(await ids(`m/${bk - 1}/`))]).size;
+  if (Math.random() < 0.1) { // nettoyage des anciennes tranches
+    for (const pre of [`p/${bk - 2}/`, `m/${bk - 2}/`]) {
+      const r = await sts.list({ prefix: pre }).catch(() => ({ blobs: [] }));
+      for (const x of r.blobs) await sts.delete(x.key).catch(() => {});
+    }
+  }
+  return J({ on, mem, visits });
+}
+
 export default async (req) => {
   const data = getStore({ name: "mudesk", consistency: "strong" });
   const vids = getStore("mudesk-videos");
@@ -70,6 +97,8 @@ export default async (req) => {
   if (req.method !== "POST") return J({ error: "méthode non autorisée" }, 405);
   let b;
   try { b = await req.json(); } catch { return J({ error: "requête invalide" }, 400); }
+
+  if (b.action === "hit") return hit(b);
 
   const a = await auth(cfg, b.pw);
   if (a === -1) return J({ error: "ADMIN_PASSWORD n’est pas défini dans Netlify" }, 503);
